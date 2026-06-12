@@ -2,123 +2,153 @@ import streamlit as st
 import random
 
 st.set_page_config(
-    page_title="약속 장소 정하기",
-    page_icon="📍",
+    page_title="우리반 반장 도우미",
+    page_icon="🏫",
     layout="centered"
 )
 
-st.title("📍 약속 장소 정하기")
-st.caption("만날 장소를 쉽고 빠르게 결정해보세요.")
+st.title("🏫 우리반 반장 도우미")
+st.caption("학생 주목 및 청소당번 자동 배정")
 
 # 세션 상태 초기화
-if "places" not in st.session_state:
-    st.session_state.places = []
+if "students" not in st.session_state:
+    st.session_state.students = []
 
-if "votes" not in st.session_state:
-    st.session_state.votes = {}
+if "cleaning_result" not in st.session_state:
+    st.session_state.cleaning_result = {}
 
-# 참석자
-st.subheader("👥 참석자 정보")
+# 학생 등록
+st.header("👨‍🎓 학생 등록")
 
-participants = st.text_input(
-    "참석자 이름 (쉼표로 구분)",
-    placeholder="예: 민수, 지영, 수현"
+student_text = st.text_area(
+    "학생 이름 입력 (한 줄에 한 명)",
+    height=200,
+    placeholder="""김민수
+이영희
+박준호"""
 )
 
-# 지역 입력
-st.subheader("🗺️ 만날 지역")
+if st.button("학생 등록"):
+    try:
+        students = [
+            s.strip()
+            for s in student_text.split("\n")
+            if s.strip()
+        ]
 
-region = st.text_input(
-    "지역 입력",
-    placeholder="예: 천안, 강남, 종로"
-)
-
-st.divider()
-
-# 장소 추가
-st.subheader("➕ 장소 후보 추가")
-
-with st.form("add_place_form"):
-    place_name = st.text_input(
-        "장소 이름",
-        placeholder="예: 스타벅스 천안점"
-    )
-
-    category = st.selectbox(
-        "카테고리",
-        ["식당 🍜", "카페 ☕", "영화관 🎬", "쇼핑 🛍️", "기타 📍"]
-    )
-
-    submitted = st.form_submit_button("추가")
-
-    if submitted:
-        if place_name.strip():
-            display_name = f"{place_name} ({category})"
-
-            if display_name not in st.session_state.places:
-                st.session_state.places.append(display_name)
-                st.session_state.votes[display_name] = 0
-                st.success("장소가 추가되었습니다.")
-            else:
-                st.warning("이미 등록된 장소입니다.")
+        if students:
+            st.session_state.students = students
+            st.success(f"{len(students)}명 등록 완료")
         else:
-            st.error("장소 이름을 입력해주세요.")
+            st.warning("학생 이름을 입력해주세요.")
+
+    except Exception as e:
+        st.error(f"오류 발생: {e}")
+
+# 등록 현황
+if st.session_state.students:
+
+    st.info(
+        f"현재 등록 학생 수 : {len(st.session_state.students)}명"
+    )
+
+    st.subheader("📋 학생 명단")
+    st.write(", ".join(st.session_state.students))
 
 st.divider()
 
-# 장소 목록
-st.subheader("📋 장소 후보")
+# 학생 주목
+st.header("👀 학생 주목시키기")
 
-if st.session_state.places:
+if st.session_state.students:
 
-    for place in st.session_state.places:
-        col1, col2 = st.columns([4, 1])
+    col1, col2 = st.columns(2)
 
-        with col1:
-            st.write(place)
+    with col1:
+        if st.button("🎤 발표자 뽑기"):
+            selected = random.choice(
+                st.session_state.students
+            )
+            st.success(f"오늘의 발표자: {selected}")
 
-        with col2:
-            if st.button(
-                "👍",
-                key=f"vote_{place}"
-            ):
-                st.session_state.votes[place] += 1
+    with col2:
+        if st.button("❓ 질문 답변자 뽑기"):
+            selected = random.choice(
+                st.session_state.students
+            )
+            st.success(f"답변자: {selected}")
 
-    st.divider()
-
-    # 투표 현황
-    st.subheader("📊 투표 결과")
-
-    for place in st.session_state.places:
-        st.write(
-            f"{place} : {st.session_state.votes[place]}표"
+    if st.button("🎯 랜덤 학생 뽑기"):
+        selected = random.choice(
+            st.session_state.students
         )
-
-    # 랜덤 추천
-    if st.button("🎲 랜덤 장소 추천"):
-        selected = random.choice(st.session_state.places)
-        st.success(f"추천 장소: {selected}")
-
-    # 최다 득표 장소
-    if st.button("🏆 최종 장소 선정"):
-        winner = max(
-            st.session_state.votes,
-            key=st.session_state.votes.get
-        )
-
         st.balloons()
-        st.success(
-            f"최종 선정 장소는 '{winner}' 입니다!"
-        )
+        st.success(f"선택된 학생: {selected}")
 
 else:
-    st.info("장소 후보를 추가해주세요.")
+    st.info("학생을 먼저 등록하세요.")
+
+st.divider()
+
+# 청소당번
+st.header("🧹 청소당번 정하기")
+
+cleaning_places = [
+    "교실 바닥",
+    "복도",
+    "창문",
+    "분리수거",
+    "칠판"
+]
+
+if st.session_state.students:
+
+    if st.button("🧹 청소당번 자동 배정"):
+
+        try:
+            students_copy = st.session_state.students.copy()
+
+            if len(students_copy) < len(cleaning_places):
+                st.warning(
+                    "학생 수가 청소구역보다 적습니다."
+                )
+            else:
+                random.shuffle(students_copy)
+
+                result = {}
+
+                for i, area in enumerate(cleaning_places):
+                    result[area] = students_copy[i]
+
+                st.session_state.cleaning_result = result
+
+        except Exception as e:
+            st.error(f"오류 발생: {e}")
+
+# 결과 표시
+if st.session_state.cleaning_result:
+
+    st.subheader("📋 청소당번 결과")
+
+    for area, student in st.session_state.cleaning_result.items():
+        st.write(f"✅ {area} : {student}")
 
 st.divider()
 
 # 초기화
-if st.button("🗑️ 전체 초기화"):
-    st.session_state.places = []
-    st.session_state.votes = {}
-    st.success("초기화 완료")
-    st.rerun()
+st.header("🔄 초기화")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    if st.button("학생 명단 초기화"):
+        st.session_state.students = []
+        st.session_state.cleaning_result = {}
+        st.success("학생 명단 삭제 완료")
+        st.rerun()
+
+with col2:
+    if st.button("청소당번 초기화"):
+        st.session_state.cleaning_result = {}
+        st.success("청소당번 삭제 완료")
+        st.rerun()
